@@ -1,6 +1,7 @@
 Yet Another Loot Manager (YALM)
 
 YOU WILL NEED THE items.db file at https://drive.google.com/file/d/1F4MpdCi5euOsS0DJfNJBWqz3tOYdNURf/view?usp=drive_link
+
 Place the items.db file inside your YALM folder.
 
 Yet Another Loot Manager (YALM) is an automated loot management system for MacroQuest.
