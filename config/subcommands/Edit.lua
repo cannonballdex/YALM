@@ -4,10 +4,24 @@ local settings = require("yalm.config.settings")
 local loader = require("yalm.core.loader")
 
 local utils = require("yalm.lib.utils")
+local Write = require("yalm.lib.Write")
+
+local function normalize_windows_path(path)
+	if not path then
+		return nil
+	end
+	return path:gsub("/", "\\")
+end
+
+local function show_file_path(filename)
+	filename = normalize_windows_path(filename)
+
+	print(("[YALM] Edit file path: %s"):format(filename))
+	Write.Info("Open this file in your editor: \at%s\ax", filename)
+end
 
 local function edit_config(type, global_settings, char_settings, args)
-	local filename = nil
-
+	local filename
 	local name = args[3]
 
 	if type == configuration.types.character.name then
@@ -21,7 +35,7 @@ local function edit_config(type, global_settings, char_settings, args)
 		return
 	end
 
-	os.execute(('start "" "%s"'):format(filename))
+	show_file_path(filename)
 end
 
 local function edit_types(type, global_settings, char_settings, args)
@@ -45,7 +59,7 @@ local function edit_types(type, global_settings, char_settings, args)
 		return
 	end
 
-	os.execute(('start "" "%s"'):format(filename))
+	show_file_path(filename)
 end
 
 local function action(type, subcommands, global_settings, char_settings, args)

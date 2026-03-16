@@ -1,9 +1,10 @@
 ---@type Mq
 local mq = require('mq')
-local ImGui = require('ImGui')
+require 'ImGui'
+
+local Open, ShowUI = true, true
 
 local gui = {
-    open = true,
     item_name = '',
     item_preference = 'Keep',
     item_scope = 'all',
@@ -60,7 +61,7 @@ local CONFIG_ACTIONS = {
         title = 'Character settings',
         list_label = nil,
         name_label = 'Character name (optional for Edit)',
-        name_help = 'Edit can open the current character if the name is blank. Set uses Setting and Value below.',
+        name_help = 'Edit can show the current character file if the name is blank. Set uses Character setting and New value below.',
         buttons = {
             { key = 'help', label = 'Help' },
             { key = 'edit', label = 'Edit' },
@@ -226,6 +227,318 @@ local function combo_index(label, current_index, values)
         ImGui.EndCombo()
     end
     return current_index
+end
+
+local function help_marker(text)
+    ImGui.TextDisabled('(?)')
+    if ImGui.IsItemHovered() then
+        ImGui.BeginTooltip()
+        ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35.0)
+        ImGui.TextUnformatted(text)
+        ImGui.PopTextWrapPos()
+        ImGui.EndTooltip()
+    end
+end
+
+local function config_name_tooltip(config_type)
+    if config_type == 'category' then
+        return [[Category name.
+
+Used by:
+- Add
+- Remove
+
+Examples:
+Class
+Tradeskill
+Quest
+
+Commands built by this GUI:
+category add "Class"
+category remove "Tradeskill"]]
+    elseif config_type == 'character' then
+        return [[Character name to edit.
+
+Examples:
+Airale
+Boxcleric
+
+Blank name is allowed for Edit and will use the current character.
+
+Commands built by this GUI:
+character edit
+character edit "Airale"]]
+    elseif config_type == 'command' then
+        return [[Command module name.
+
+Examples:
+SellStuff
+DoBank
+CleanupLoot
+
+Commands built by this GUI:
+command create "SellStuff"
+command edit "SellStuff"
+command delete "SellStuff"]]
+    elseif config_type == 'condition' then
+        return [[Condition module name.
+
+Examples:
+Scrolls
+CanEquip
+NeedUpgrade
+
+Commands built by this GUI:
+condition create "Scrolls"
+condition edit "Scrolls"
+condition delete "Scrolls"]]
+    elseif config_type == 'helper' then
+        return [[Helper module name.
+
+Examples:
+GetClassList
+BestTarget
+MissingSpellOwner
+
+Commands built by this GUI:
+helper create "GetClassList"
+helper edit "GetClassList"
+helper delete "GetClassList"]]
+    elseif config_type == 'preference' then
+        return [[Preference name.
+
+Examples:
+Keep
+Sell
+Bank
+Tribute
+
+Commands built by this GUI:
+preference add "Keep"
+preference remove "Sell"
+preference set <setting> <value>]]
+    elseif config_type == 'rule' then
+        return [[Rule name.
+
+Examples:
+Spells
+Tradeskills
+ArmorUpgrades
+
+Commands built by this GUI:
+rule add "Spells"
+rule remove "ArmorUpgrades"
+rule set <setting> <value>]]
+    elseif config_type == 'setting' then
+        return [[Global settings do not use the name field.
+
+Use Edit or Set instead.
+
+Example:
+setting edit
+setting set frequency 3]]
+    elseif config_type == 'subcommand' then
+        return [[Subcommand module name.
+
+Examples:
+Add
+Edit
+Delete
+
+Commands built by this GUI:
+subcommand create "Add"
+subcommand edit "Edit"
+subcommand delete "Delete"]]
+    end
+
+    return [[Enter the name used by the selected configuration type.]]
+end
+
+local function config_setting_tooltip(config_type)
+    if config_type == 'character' then
+        return [[Character setting name to change.
+
+Known examples:
+frequency
+save_slots
+always_loot
+unmatched_item_rule
+
+Example:
+Character setting = frequency
+New value = 3]]
+    elseif config_type == 'command' then
+        return [[Field name inside the selected command entry.
+
+Examples:
+loaded
+filename
+enabled
+
+The exact valid fields depend on how YALM stores that type.
+
+Command built by this GUI:
+command set <setting> <value>]]
+    elseif config_type == 'condition' then
+        return [[Field name inside the selected condition entry.
+
+Examples:
+loaded
+filename
+enabled
+
+The exact valid fields depend on the condition data structure.
+
+Command built by this GUI:
+condition set <setting> <value>]]
+    elseif config_type == 'helper' then
+        return [[Field name inside the selected helper entry.
+
+Examples:
+loaded
+filename
+enabled
+
+The exact valid fields depend on the helper data structure.
+
+Command built by this GUI:
+helper set <setting> <value>]]
+    elseif config_type == 'preference' then
+        return [[Preference field name to change.
+
+Common examples in YALM preference objects:
+setting
+quantity
+list
+
+Example:
+Preference name = Keep
+Setting = quantity
+Value = 10]]
+    elseif config_type == 'rule' then
+        return [[Rule field name to change.
+
+Common examples:
+category
+conditions
+items
+name
+
+Example:
+Rule name = Spells
+Setting = category
+Value = Scrolls]]
+    elseif config_type == 'setting' then
+        return [[Global setting name to change.
+
+Known examples visible in the GUI:
+frequency
+save_slots
+always_loot
+unmatched_item_rule
+
+Example:
+setting set frequency 3]]
+    elseif config_type == 'subcommand' then
+        return [[Field name inside the selected subcommand entry.
+
+Examples:
+loaded
+filename
+enabled
+
+The exact valid fields depend on the subcommand data structure.
+
+Command built by this GUI:
+subcommand set <setting> <value>]]
+    end
+
+    return [[Enter the field name to change for the selected type.]]
+end
+
+local function config_value_tooltip(config_type)
+    if config_type == 'character' then
+        return [[New value for the selected character setting.
+
+Examples:
+frequency = 3
+save_slots = true
+always_loot = false
+unmatched_item_rule = Keep
+
+Use:
+- numbers for numeric settings
+- true/false for boolean settings
+- text for rule names or preferences]]
+    elseif config_type == 'command' then
+        return [[New value for the selected command field.
+
+Examples:
+true
+false
+mycommand.lua
+1
+
+The exact valid value depends on the selected field.]]
+    elseif config_type == 'condition' then
+        return [[New value for the selected condition field.
+
+Examples:
+true
+false
+Scrolls.lua
+1
+
+The exact valid value depends on the selected field.]]
+    elseif config_type == 'helper' then
+        return [[New value for the selected helper field.
+
+Examples:
+true
+false
+GetClassList.lua
+1
+
+The exact valid value depends on the selected field.]]
+    elseif config_type == 'preference' then
+        return [[New value for the selected preference field.
+
+Examples:
+setting = Keep
+quantity = 10
+list = Scrolls
+
+Use text, numbers, or booleans depending on the field.]]
+    elseif config_type == 'rule' then
+        return [[New value for the selected rule field.
+
+Examples:
+category = Scrolls
+name = Spells
+conditions = Scrolls
+
+The exact valid value depends on the field you are changing.]]
+    elseif config_type == 'setting' then
+        return [[New value for the selected global setting.
+
+Examples:
+frequency = 3
+save_slots = true
+always_loot = false
+unmatched_item_rule = Keep]]
+    elseif config_type == 'subcommand' then
+        return [[New value for the selected subcommand field.
+
+Examples:
+true
+false
+Edit.lua
+1
+
+The exact valid value depends on the selected field.]]
+    end
+
+    return [[Enter the new value for the selected field.]]
 end
 
 local function draw_status(state, global_settings)
@@ -415,14 +728,29 @@ local function draw_config_tools()
     end
 
     gui.config_name, _ = ImGui.InputText((meta.name_label or 'Name') .. '##config_name', gui.config_name)
+    ImGui.SameLine()
+    help_marker(config_name_tooltip(config_type))
 
     if meta.name_help and trim(meta.name_help) ~= '' then
         ImGui.TextWrapped(meta.name_help)
     end
 
     if meta.use_setting_value then
-        gui.config_setting, _ = ImGui.InputText('Setting##config_setting', gui.config_setting)
-        gui.config_value, _ = ImGui.InputText('Value##config_value', gui.config_value)
+        local setting_label = 'Setting##config_setting'
+        local value_label = 'Value##config_value'
+
+        if config_type == 'character' then
+            setting_label = 'Character setting##config_setting'
+            value_label = 'New value##config_value'
+        end
+
+        gui.config_setting, _ = ImGui.InputText(setting_label, gui.config_setting)
+        ImGui.SameLine()
+        help_marker(config_setting_tooltip(config_type))
+
+        gui.config_value, _ = ImGui.InputText(value_label, gui.config_value)
+        ImGui.SameLine()
+        help_marker(config_value_tooltip(config_type))
     end
 
     local buttons = meta.buttons or {}
@@ -435,31 +763,40 @@ local function draw_config_tools()
 
     ImGui.Separator()
     if config_type == 'category' then
-        ImGui.TextWrapped('Category uses add and remove, not create and delete. Example: name = Class, then Add or Remove.')
+        ImGui.TextWrapped('Category uses add and remove, not create and delete.')
     elseif config_type == 'character' then
-        ImGui.TextWrapped('Character supports Help, Edit, and Set. It does not support List.')
+        ImGui.TextWrapped('Character settings let you edit a character config file or set a specific character setting and value.')
+    elseif config_type == 'command' then
+        ImGui.TextWrapped('Commands support Help, List, Create, Delete, Edit, and Set.')
+    elseif config_type == 'condition' then
+        ImGui.TextWrapped('Conditions support Help, List, Create, Delete, Edit, and Set.')
+    elseif config_type == 'helper' then
+        ImGui.TextWrapped('Helpers support Help, List, Create, Delete, Edit, and Set.')
+    elseif config_type == 'preference' then
+        ImGui.TextWrapped('Preferences support Help, List, Add, Remove, and Set.')
+    elseif config_type == 'rule' then
+        ImGui.TextWrapped('Rules support Help, List, Add, Remove, and Set.')
     elseif config_type == 'setting' then
-        ImGui.TextWrapped('Setting supports Help, Edit, and Set. It does not use the name field.')
+        ImGui.TextWrapped('Global settings support Help, Edit, and Set. They do not use the name field.')
+    elseif config_type == 'subcommand' then
+        ImGui.TextWrapped('Subcommands support Help, List, Create, Delete, Edit, and Set.')
     else
         ImGui.TextWrapped('Use Help to see the exact syntax that YALM supports for the selected type.')
     end
 end
 
 local function render(state, global_settings)
-    if not gui.open then
-        return
+    if Open then
+        Open, ShowUI = ImGui.Begin('YALM GUI by CANNONBALLDEX', Open)
+        if ShowUI then
+            draw_general_commands()
+            draw_item_tools()
+            draw_npc_tools()
+            draw_config_tools()
+            draw_status(state, global_settings)
+        end
+        ImGui.End()
     end
-
-    local should_draw
-    should_draw, gui.open = ImGui.Begin('YALM', gui.open)
-    if should_draw then
-        draw_general_commands()
-        draw_item_tools()
-        draw_npc_tools()
-        draw_config_tools()
-        draw_status(state, global_settings)
-    end
-    ImGui.End()
 end
 
 function gui.init(state_ref, settings_ref)
@@ -468,11 +805,11 @@ function gui.init(state_ref, settings_ref)
         local action = args[1]
 
         if action == 'show' then
-            gui.open = true
+            Open = true
         elseif action == 'hide' then
-            gui.open = false
+            Open = false
         else
-            gui.open = not gui.open
+            Open = not Open
         end
     end)
 
