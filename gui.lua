@@ -641,9 +641,13 @@ local function draw_npc_tools()
     if ImGui.Button('Bank##npc') then
         run_command('bank')
     end
-
+    ImGui.SameLine()
     if ImGui.Button('Guild bank##npc') then
         run_command('guild')
+    end
+    ImGui.SameLine()
+    if ImGui.Button('Destroy##npc') then
+        run_command('destroy')
     end
 
     gui.tribute_mode = combo_from_list('Tribute mode##npc', gui.tribute_mode, TRIBUTE_MODES)
